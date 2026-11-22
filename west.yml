@@ -26,17 +26,17 @@ manifest:
       revision: 25851fa15cdc2dc9c395807bce97fa81c46c10ee
       import: true
 
-    # ── 模型 C 的另外两个仓：建好远端后取消注释即可（west 会直接发现 module）──
-    # 未启用期间，这两个 module 由 providers/official/zephyr/west/provider.yaml 的
-    # EXTRA_ZEPHYR_MODULES 注入（见 services/kharon/__main__.py:126），构建不受影响。
-    # - name: kharon-boards
-    #   url: <git 地址>/kharon-boards
-    #   path: kharon-boards
-    #   revision: main
-    # - name: elab-app-common
-    #   url: <git 地址>/elab-app-common
-    #   path: elab-app-common
-    #   revision: main
+    # ── 模型 C 的另外两个仓（2026-11-22 启用，已推 GitHub 私仓 + v0.1.0）──
+    # 启用后 west 直接发现 module，不再依赖 providers/official/zephyr/west/provider.yaml
+    # 的 EXTRA_ZEPHYR_MODULES 注入（见 services/kharon/__main__.py:126，两处只保留一处）。
+    - name: kharon-boards
+      url: https://github.com/xkk6663/kharon-boards.git
+      path: kharon-boards
+      revision: v0.1.0
+    - name: elab-app-common
+      url: https://github.com/xkk6663/elab-app-common.git
+      path: elab-app-common
+      revision: v0.1.0
 
 # ── kharon 快照（bootstrap 读这一段，west 不读）────────────────────────────
 zephyr:
