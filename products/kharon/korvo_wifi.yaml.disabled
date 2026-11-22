@@ -1,0 +1,28 @@
+# projects/kharon/korvo_wifi.yaml —— Kharon 工程登记（app + board）
+# DISABLED：APP 源码缺失（只有 boards/ overlay），恢复后统一用 esp32s3_korvo
+name: korvo_wifi
+root: ${ZEPHYR_ROOT}/applications/esp32s3/korvo_wifi
+pack: zephyr/framework
+chip: esp32s3_korvo
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/esp32s3/korvo_wifi/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30

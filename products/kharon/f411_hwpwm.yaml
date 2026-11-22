@@ -1,0 +1,37 @@
+# projects/kharon/f411_hwpwm.yaml
+# F411 上的第二个 app（硬件 PWM）——同一块板下的多工程，验证左栏二级树的组内排序
+
+name: f411_hwpwm
+root: ${ZEPHYR_ROOT}/applications/stm32f4/f411_hwpwm
+pack: zephyr/framework
+chip: blackpill_f411ce
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/stm32f4/f411_hwpwm/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+debug:
+  # 板上物理探针：DAP-Link（CMSIS-DAP/HID + CDC 串口）。
+  # 面板据此判断 flash/debug 是否可点；openocd 的 interface 由芯片包整份 cfg 提供。
+  probe: dap
+
+serial:
+  port: auto
+  baud: 115200
+
+monitor:
+  # 硬件 PWM 那一版多打了 psc/arr/ccr1/ccr2，但“活着”的判据仍是同一行统计。
+  close_on:
+    - { kind: regex, pattern: "t=[ ]*[0-9]+ s duty=" }
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30

@@ -1,0 +1,30 @@
+# projects/kharon/korvo_shell_s31.yaml
+# shell 交互工程：串口面板的"连续敲命令"语义主要在这里验证（S2）
+
+name: korvo_shell_s31
+root: ${ZEPHYR_ROOT}/applications/esp32s31/korvo_shell
+pack: zephyr/framework
+chip: korvo1
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/esp32s31/korvo_shell/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30

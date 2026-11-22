@@ -1,0 +1,71 @@
+# zephyr-workspace/kharon-manifest/west.yml —— 模型 C 的单一入口（2026-11-20）
+#
+# 这个文件**同时**承担两个角色，互不干扰：
+#   1. west 清单 —— 只读 `manifest:` 块。`west init -m <本仓 URL>` 之后 `west update`
+#      靠它把整棵工作区拉出来。
+#   2. kharon 快照 —— 只读顶层 `zephyr:` / `projects:` 块。`kharon bootstrap` 的
+#      pinned 通道用它判断"缺哪些模块、该钉哪个 commit"。
+#
+# 为什么能共存：west 只校验 root 的 `manifest` 键，其余顶层键被忽略
+# （2026-11-20 用 west 1.5.0 实测：`west list` 正常解析 hybrid 文件）。
+#
+# 关键设计：zephyr 用 `import: true` 直接引入上游自己的 west.yml。
+#   → 68 个模块的 revision **不在这里抄第二遍**，永远等于 zephyr commit 对应的那一份；
+#   → 升级 Zephyr = 只改下面 `revision` 与 `zephyr.commit` 两处（同一串哈希）。
+manifest:
+  version: "0.13"
+
+  self:
+    # 本仓（kharon-manifest）在工作区里的落点，与 .west/config 的 manifest.path 对齐
+    path: kharon-manifest
+
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      path: zephyr
+      revision: 25851fa15cdc2dc9c395807bce97fa81c46c10ee
+      import: true
+
+    # ── 模型 C 的另外两个仓：建好远端后取消注释即可（west 会直接发现 module）──
+    # 未启用期间，这两个 module 由 providers/official/zephyr/west/provider.yaml 的
+    # EXTRA_ZEPHYR_MODULES 注入（见 services/kharon/__main__.py:126），构建不受影响。
+    # - name: kharon-boards
+    #   url: <git 地址>/kharon-boards
+    #   path: kharon-boards
+    #   revision: main
+    # - name: elab-app-common
+    #   url: <git 地址>/elab-app-common
+    #   path: elab-app-common
+    #   revision: main
+
+# ── kharon 快照（bootstrap 读这一段，west 不读）────────────────────────────
+zephyr:
+  name: zephyr
+  remote: https://github.com/zephyrproject-rtos/zephyr
+  path: zephyr
+  # 与上面 manifest.projects[zephyr].revision 必须一致（同一份事实写两处，因为两边都读）
+  commit: 25851fa15cdc2dc9c395807bce97fa81c46c10ee
+  # 板级 module 的真相（不在 zephyr 树内另存副本）
+  boards_module: kharon-boards
+  # pinned 通道只拉这 6 个模块闭包；learning 通道不看这份清单，直接全量 west update
+  pinned_modules:
+    - hal_espressif
+    - hal_stm32
+    - cmsis_6
+    - mbedtls
+    - tf-psa-crypto
+    - mcuboot
+
+# 只给 pinned 通道做"路径 + 钉住版本"的查表用。
+# 刻意**不再复制**上游 68 条 revision：上游那份唯一事实源是 zephyr 的 import，
+# 抄一遍就会漂移（旧的 manifests/zephyr.west.yml 就是这么变成历史快照的）。
+projects:
+  # hal_espressif 是 fork（PR 657）。上游 import 给的是 a67d465（会随 PR 漂移），
+  # 这里钉到不可变 commit；`kharon bootstrap --pinned` 会在 west update 之后
+  # 按这一行把 checkout 拉回 fork（bootstrap._pin_modules）。
+  - {name: hal_espressif, path: modules/hal/espressif, revision: d89f455da929bdda8cfe0960fceeb36c704ce1b8}
+  - {name: hal_stm32, path: modules/hal/stm32, revision: 2fd0502dd5e02aa3e95a2f01278fdf27e42d7229}
+  - {name: cmsis_6, path: modules/hal/cmsis_6, revision: 1c1840af7a7e757d6e2fec3ddb0e5ce0dfcc93c8}
+  - {name: mbedtls, path: modules/crypto/mbedtls, revision: c43f34b93797e81fd0257c30004dcd0ae332ae51}
+  - {name: tf-psa-crypto, path: modules/crypto/tf-psa-crypto, revision: 765af96a20a2b408474dcd950372ba9af4d26b62}
+  - {name: mcuboot, path: bootloader/mcuboot, revision: 725d63c9d5bc1bb572d802e7a768daf504186daf}

@@ -1,0 +1,50 @@
+# f411_dac_adc —— 由 Kharon 架构页“新建工程”向导生成
+# 芯片 / 板级真相 / APP 三层来自已安装芯片包与 topology；改之前先看架构页。
+
+name: f411_dac_adc
+root: ${ZEPHYR_ROOT}/applications/stm32f4/f411_dac_adc
+pack: zephyr/framework
+chip: blackpill_f411ce
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+
+targets:
+  - id: pwm_adc
+    chip: blackpill_f411ce
+    build:
+      work_dir: ${ZEPHYR_ROOT}/build/stm32f4/f411_dac_adc/pwm_adc
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+debug:
+  probe: dap
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  close_on:
+    - { kind: regex, pattern: "wave t=[ ]*[0-9]+s .*PASS" }
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+matrix: f411_dac_adc
+
+step_labels:
+  doctor: 工具链探活
+  build: 编译（west build）
+  report: 用量报告（ram/rom）
+  flash: 烧录（openocd + DAP-Link）
+  debug_verify: 断到 main
+  monitor: 串口闭环

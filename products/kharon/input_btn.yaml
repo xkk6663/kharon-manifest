@@ -1,0 +1,28 @@
+# projects/kharon/input_btn.yaml —— Kharon 工程登记（app + board）
+# 板级真相：esp32s3_korvo（IO45 KEY / GPIO48 WS2812 / 原生 USB console）
+name: input_btn
+root: ${ZEPHYR_ROOT}/applications/esp32s3/input_btn
+pack: zephyr/framework
+chip: esp32s3_korvo
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/esp32s3/input_btn/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30

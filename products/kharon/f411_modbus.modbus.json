@@ -1,0 +1,190 @@
+{
+  "rev": 0,
+  "unit_id": 1,
+  "timeout_ms": 200,
+  "retries": 2,
+  "points": [
+    {
+      "name": "device_id",
+      "fc": 3,
+      "address": 0,
+      "type": "u16",
+      "note": "0x0411 = STM32F411；Zephyr 版同值（迁移不改对外契约）"
+    },
+    {
+      "name": "fw_version",
+      "fc": 3,
+      "address": 1,
+      "type": "u16",
+      "note": "0x0100 = v1.0"
+    },
+    {
+      "name": "tick",
+      "fc": 3,
+      "address": 2,
+      "type": "u16",
+      "unit": "s",
+      "plot": true,
+      "note": "心跳秒计数，每秒 +1（由 k_uptime_get 派生，不靠软件累加）"
+    },
+    {
+      "name": "toggles",
+      "fc": 3,
+      "address": 3,
+      "type": "u16",
+      "plot": true,
+      "note": "LED 翻转次数口径，每秒 +2（500 ms 心跳灯）"
+    },
+    {
+      "name": "stage",
+      "fc": 3,
+      "address": 4,
+      "type": "u16",
+      "note": "1 = 从站在跑（modbus_init_server 成功后才回 1）"
+    },
+    {
+      "name": "led",
+      "fc": 3,
+      "address": 16,
+      "type": "u16",
+      "writable": true,
+      "note": "0x0010 写 1 点亮（PC13 低电平点亮，固件已处理极性）"
+    },
+    {
+      "name": "runtime",
+      "fc": 3,
+      "address": 32,
+      "type": "u32",
+      "word_order": "big",
+      "unit": "100ms",
+      "note": "运行计数器：字序测试点（高字在 0x0020）"
+    },
+    {
+      "name": "temp",
+      "fc": 3,
+      "address": 48,
+      "type": "f32",
+      "word_order": "big",
+      "unit": "°C",
+      "plot": true,
+      "note": "模拟温度：float 字序 + 缩放测试点，8 档循环"
+    },
+    {
+      "name": "uptime",
+      "fc": 3,
+      "address": 64,
+      "type": "u32",
+      "word_order": "big",
+      "unit": "s",
+      "note": "开机秒数（u32 高字在 0x0040）"
+    },
+    {
+      "name": "scratch0",
+      "fc": 3,
+      "address": 272,
+      "type": "u16",
+      "writable": true,
+      "note": "0x0110 可写暂存，FC06/FC10 回读验证用"
+    },
+    {
+      "name": "scratch1",
+      "fc": 3,
+      "address": 273,
+      "type": "u16",
+      "writable": true
+    },
+    {
+      "name": "scratch2",
+      "fc": 3,
+      "address": 274,
+      "type": "u16",
+      "writable": true
+    },
+    {
+      "name": "scratch3",
+      "fc": 3,
+      "address": 275,
+      "type": "u16",
+      "writable": true
+    },
+    {
+      "name": "coil0",
+      "fc": 1,
+      "address": 0,
+      "type": "bit",
+      "writable": true,
+      "plot": false,
+      "note": "线圈 0 与 LED 联动（写它同时置 led 寄存器语义）"
+    },
+    {
+      "name": "coil1",
+      "fc": 1,
+      "address": 1,
+      "type": "bit",
+      "writable": true,
+      "plot": false
+    },
+    {
+      "name": "coil2",
+      "fc": 1,
+      "address": 2,
+      "type": "bit",
+      "writable": true,
+      "plot": false
+    },
+    {
+      "name": "coil3",
+      "fc": 1,
+      "address": 3,
+      "type": "bit",
+      "writable": true,
+      "plot": false
+    },
+    {
+      "name": "di_led",
+      "fc": 2,
+      "address": 0,
+      "type": "bit",
+      "plot": false,
+      "note": "离散输入 0：LED 当前状态（读的是引脚，不是命令）"
+    },
+    {
+      "name": "di_bus",
+      "fc": 2,
+      "address": 1,
+      "type": "bit",
+      "plot": false,
+      "note": "离散输入 1：最近 2s 总线上有事务（任何回调被调用即刷新）"
+    }
+  ],
+  "groups": [
+    {
+      "name": "fast",
+      "interval_ms": 500,
+      "enabled": true,
+      "points": ["tick", "toggles", "temp"],
+      "note": "0x02/0x03 相邻合并成一条读；0x30/0x31 是 f32 的两个字（大端字序）"
+    },
+    {
+      "name": "slow",
+      "interval_ms": 2000,
+      "enabled": true,
+      "points": ["device_id", "fw_version", "stage", "runtime", "uptime"],
+      "note": "身份与累计量：0x00–0x04 一条、0x20/0x21 一条、0x40/0x41 一条"
+    },
+    {
+      "name": "bits",
+      "interval_ms": 2000,
+      "enabled": true,
+      "points": ["coil0", "coil1", "coil2", "coil3", "di_led", "di_bus"],
+      "note": "FC01 与 FC02 必须各发一条（功能码不同不能合并），位打包 LSB 在前"
+    },
+    {
+      "name": "writes",
+      "interval_ms": 1000,
+      "enabled": false,
+      "points": ["led"],
+      "note": "写点不参与轮询（默认关闭）：读回来的只是自己刚写下去的值"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+# projects/kharon/blinky_s3.yaml
+# 最小 app，用于验证 S3（Xtensa）这条链——与 ARM 的差别全在工具链与 gdb 键，不在内核
+# 板级真相：esp32s3_korvo（IO45 KEY / GPIO48 WS2812 / 原生 USB console）
+
+name: blinky_s3
+root: ${ZEPHYR_ROOT}/applications/esp32s3/blinky_s3
+pack: zephyr/framework
+chip: esp32s3_korvo
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/esp32s3/blinky_s3/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30

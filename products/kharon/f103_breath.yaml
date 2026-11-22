@@ -1,0 +1,45 @@
+# projects/kharon/f103_breath.yaml
+# 与 f411_breath 是两个独立 app（main.c 不同），但同属 matrix: breath ——
+# 文案上写"同组工程"而不是"同一 app"（方案 §3.4 的诚实表述）。
+#
+# 板级事实：Blue Pill / STM32F103C8T6（64 KB flash / 20 KB SRAM）住在
+# kharon-boards/boards/st/stm32f103c8t6_bluepill；APP 不再用 overlay 改容量。
+
+name: f103_breath
+root: ${ZEPHYR_ROOT}/applications/stm32f1/f103_breath
+pack: zephyr/framework
+chip: stm32f103c8t6_bluepill
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/stm32f1/f103_breath/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+debug:
+  # 板上物理探针：DAP-Link（CMSIS-DAP/HID + CDC 串口）。
+  # 面板据此判断 flash/debug 是否可点；openocd 的 interface 由芯片包整份 cfg 提供。
+  probe: dap
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  # close_on = “什么算成功”：一行周期统计写出来，就说明主循环在跑、串口链路通。
+  # 没有 close_on 的工程，面板会把 monitor 标成不可用（没判据就没有结论）。
+  close_on:
+    - { kind: regex, pattern: "t=[ ]*[0-9]+ s duty=" }
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+matrix: breath

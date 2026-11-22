@@ -1,0 +1,41 @@
+# projects/kharon/korvo_sys.yaml
+# 一个 APP × 两块板：同一份 applications/esp32s31/korvo_sys 源码，
+# 通过 targets[] 选择 korvo1 / esp32s3_korvo；不再复制产品 yaml。
+
+name: korvo_sys
+root: ${ZEPHYR_ROOT}/applications/esp32s31/korvo_sys
+pack: zephyr/framework
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+targets:
+  - id: s31
+    chip: korvo1
+    build:
+      work_dir: ${ZEPHYR_ROOT}/build/esp32s31/korvo_sys/default
+  - id: s3
+    chip: esp32s3_korvo
+    build:
+      work_dir: ${ZEPHYR_ROOT}/build/esp32s3/korvo_sys/default
+
+matrix: korvo_sys

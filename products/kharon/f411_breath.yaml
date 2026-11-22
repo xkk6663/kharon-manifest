@@ -1,0 +1,57 @@
+# projects/kharon/f411_breath.yaml —— Kharon 的第一个工程（P0 风险闸门）
+#
+# 一个 Zephyr 工程 = (app, board)。builder 不认识 cmake，也不认识 west：
+# 编译命令由 provider 声明，芯片事实由 pack 声明，主机路径由 kharon.host.yaml 声明。
+#
+# 跑：ELAB_HOST=kharon.host.yaml elab run -p f411_breath --steps doctor,build
+
+name: f411_breath
+root: ${ZEPHYR_ROOT}/applications/stm32f4/f411_breath
+pack: zephyr/framework              # 固定包：不受 active.json 影响
+chip: blackpill_f411ce
+archetype: zephyr                   # Zephyr 工程天然规范，不做指纹接管
+provider: zephyr/west@>=1 <2        # 未安装 / 缺步骤直接报错，不回退原生链
+
+build:
+  kind: cmake                       # 仅描述（真跑的是 provider 的 west 命令）
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/stm32f4/f411_breath/default
+  # ★ 首次全量重编：目录为空即 pristine，不需要 -p always
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+debug:
+  # 板上物理探针：DAP-Link（CMSIS-DAP/HID + CDC 串口）。
+  # 面板据此判断 flash/debug 是否可点；openocd 的 interface 由芯片包整份 cfg 提供。
+  probe: dap
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  # ★ 闭环判据（不是"收到任何一行就算过"）：固件每 2s 打一条
+  #   `t=  12 s duty= 500 us frame avg=1005 min=1000 max=1043 us late=0 frames=...`
+  #   只有主循环真的在跑（软 PWM 帧在推进）才会有这条。上电横幅不算闭环——
+  #   它只能证明"串口通了"，证明不了"程序没卡死"。
+  close_on:
+    - { kind: regex, pattern: "t=[ ]*[0-9]+ s duty=" }
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+# 同组工程 = 同一次对照（矩阵页按这个字段聚合；见方案 §3.4）
+matrix: breath
+
+step_labels:
+  doctor: 工具链探活
+  build: 编译（west build）
+  report: 用量报告（ram/rom）
+  flash: 烧录（openocd + DAP-Link）
+  debug_verify: 断到 main
+  monitor: 串口闭环（呼吸灯心跳）

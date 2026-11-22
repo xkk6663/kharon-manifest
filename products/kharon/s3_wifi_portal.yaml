@@ -1,0 +1,39 @@
+# projects/kharon/s3_wifi_portal.yaml
+# Wi-Fi APSTA 配网门户 + MCUboot 双镜像（sysbuild）：OTA 教程的实机载体。
+# 芯片不写死在 yaml 里的事：target/串口参数全在 chips/esp32s3_korvo.yaml，
+# flash.runner: esp32 → 烧录走 west flash（esptool），探针无关。
+
+name: s3_wifi_portal
+root: ${ZEPHYR_ROOT}/applications/esp32s3/s3_wifi_portal
+pack: zephyr/framework
+chip: esp32s3_korvo
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/esp32s3/s3_wifi_portal/default
+
+# sysbuild 构建时 app 域的产物在 <work_dir>/<app_name>/zephyr/ 下
+# （顶层是 sysbuild 超级构建，mcuboot 域在 <work_dir>/mcuboot/）。
+# signed.bin 由 mcuboot 的 POST_BUILD 自动签出（west flash 烧的就是它）；
+# sysbuild 不产出 hex，这里不声明（声明了就会"产物缺失"告警）。
+artifacts:
+  elf: ${work_dir}/s3_wifi_portal/zephyr/zephyr.elf
+  bin: ${work_dir}/s3_wifi_portal/zephyr/zephyr.bin
+  signed_bin: ${work_dir}/s3_wifi_portal/zephyr/zephyr.signed.bin
+  map: ${work_dir}/s3_wifi_portal/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+  reconnect: { enabled: true, min_ms: 200, max_ms: 5000, max_attempts: 0 }
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception|WDT reset" }
+  close_on:
+    - { kind: regex, pattern: "s3_wifi_portal booting" }
+    - { kind: regex, pattern: "portal ready" }
+  idle_timeout_s: 30

@@ -1,0 +1,53 @@
+# projects/kharon/f411_modbus.yaml —— Zephyr 侧的 Modbus RTU 从站
+#
+# 与 classic 的 projects/STM32F411_modbus.yaml 是同一块板、同一条串口、同一套面板，
+# 只把「固件」换成了 Zephyr 版（applications/stm32f4/f411_modbus）。
+# 对照着看这两份 yaml，能看出迁移到底改了什么：几乎只有 root / provider / 构建方式。
+
+name: f411_modbus
+root: ${ZEPHYR_ROOT}/applications/stm32f4/f411_modbus
+pack: zephyr/framework
+chip: blackpill_f411ce
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+  work_dir: ${ZEPHYR_ROOT}/build/stm32f4/f411_modbus/default
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+debug:
+  probe: dap
+
+serial:
+  # ★ 与 f411_breath 的关键差别：这个工程的 USART1 归 Modbus 协议栈，
+  #   monitor 只在上电窗口（协议起来之前）有意义。见 monitor.close_on 的注释。
+  port: auto
+  baud: 115200
+
+monitor:
+  # 单口方案：init 之前打 `[boot] ...` 几行，init 之后一个字节都不打。
+  # 所以闭环判据就是那几行 boot 横幅 —— 它证明「固件起来了 + USART1 通了」；
+  # 之后协议是否真的在应答，由 Modbus 面板的轮询结果判定（教程 11 §4）。
+  close_on:
+    - { kind: regex, pattern: "^\\[boot\\]", within_s: 15 }
+  fail_on:
+    - { kind: regex, pattern: "HardFault|FATAL|ASSERTION FAIL|PANIC" }
+  idle_timeout_s: 30
+
+# 与 f411_breath 不同组：这是总线实验，不是呼吸灯对照
+matrix: bus
+
+step_labels:
+  doctor: 工具链探活
+  build: 编译（west build）
+  report: 用量报告（ram/rom）
+  flash: 烧录（openocd + DAP-Link）
+  debug_verify: 断到 main
+  monitor: 上电横幅（协议起来前的唯一窗口）

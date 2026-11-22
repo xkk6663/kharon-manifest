@@ -1,0 +1,40 @@
+# projects/kharon/korvo_apps.yaml
+# 同一份 korvo_apps 源码 × korvo1 / esp32s3_korvo 两块板。
+# S3 板没有 ADC 键梯，APP 用 zephyr,user 能力探测自动裁掉该命令。
+
+name: korvo_apps
+root: ${ZEPHYR_ROOT}/applications/esp32s31/korvo_apps
+pack: zephyr/framework
+archetype: zephyr
+provider: zephyr/west@>=1 <2
+
+build:
+  kind: cmake
+  source: ${root}/CMakeLists.txt
+
+artifacts:
+  elf: ${work_dir}/zephyr/zephyr.elf
+  bin: ${work_dir}/zephyr/zephyr.bin
+  hex: ${work_dir}/zephyr/zephyr.hex
+  map: ${work_dir}/zephyr/zephyr.map
+
+serial:
+  port: auto
+  baud: 115200
+
+monitor:
+  fail_on:
+    - { kind: regex, pattern: "FATAL ERROR|ASSERTION FAIL|Unhandled kernel exception" }
+  idle_timeout_s: 30
+
+targets:
+  - id: s31
+    chip: korvo1
+    build:
+      work_dir: ${ZEPHYR_ROOT}/build/esp32s31/korvo_apps/default
+  - id: s3
+    chip: esp32s3_korvo
+    build:
+      work_dir: ${ZEPHYR_ROOT}/build/esp32s3/korvo_apps/default
+
+matrix: korvo_apps
